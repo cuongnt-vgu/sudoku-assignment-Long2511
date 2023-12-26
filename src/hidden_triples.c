@@ -101,16 +101,6 @@ void hidden_triple_unit(Cell **p_cells, int *p_counter)
                             }
                         }
                     }
-
-                    printf("cand: %d %d %d %s\n", cand1, cand2, cand3, result ? "YES" : "NO");
-                    if(result)
-                    {
-                        printf("Cell: {%d, %d}, {%d, %d}, {%d, %d}\n",
-                                    list_cell[0]->row_index, list_cell[0]->col_index,
-                                    list_cell[1]->row_index, list_cell[1]->col_index,
-                                    list_cell[2]->row_index, list_cell[2]->col_index);
-                    }
-
                     if(result) (*p_counter)++;
                 }
 
