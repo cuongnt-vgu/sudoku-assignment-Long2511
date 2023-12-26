@@ -9,7 +9,7 @@ void init_sudoku(SudokuBoard *p_board)
     p_board->data = malloc(BOARD_SIZE * sizeof(Cell *));
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        p_board->data[i] = malloc(BOARD_SIZE * sizeof(Cell));
+        p_board->data[i] = malloc(BOARD_SIZE * sizeof(Cell ));
         p_board->p_rows[i] = malloc(BOARD_SIZE * sizeof(Cell *));
         p_board->p_cols[i] = malloc(BOARD_SIZE * sizeof(Cell *));
         p_board->p_boxes[i] = malloc(BOARD_SIZE * sizeof(Cell *));
@@ -23,7 +23,7 @@ void init_sudoku(SudokuBoard *p_board)
             p_board->p_rows[i][j] = &p_board->data[i][j];
             p_board->p_cols[j][i] = &p_board->data[i][j];
             p_board->p_boxes[(i / 3) * 3 + j / 3][(i % 3) * 3 + j % 3] =
-                &p_board->data[i][j];
+                    &p_board->data[i][j];
 
             // set row index and col index
             p_board->data[i][j].row_index = i;
@@ -78,12 +78,9 @@ void unset_candidate(Cell *cell, int value)
     cell->candidates[value - 1] = 0;
     cell->num_candidates -= 1;
 }
-
-bool is_candidate(Cell *cell, int value)
-{
+bool is_candidate(Cell *cell, int value) {
     return cell->candidates[value - 1] == 1;
 }
-
 void set_candidates(Cell *cell, int *candidates, int size)
 {
     // reset candidates
@@ -201,7 +198,7 @@ int check_solved_cells(SudokuBoard *p_board, Cell ***p_solved_cells)
                 p_board->data[i][j].value = candidates[0];
                 free(candidates);
                 p_board->solved_cells[p_board->solved_counter++] =
-                    &p_board->data[i][j];
+                        &p_board->data[i][j];
             }
         }
     }
@@ -216,6 +213,15 @@ void print_candidate_num(SudokuBoard *p_board)
         for (int j = 0; j < BOARD_SIZE; j++)
         {
             printf("%d ", p_board->data[i][j].num_candidates);
+        }
+        printf("\n");
+    }
+}
+
+void show_sudoku(SudokuBoard *p_board) {
+    for(int i = 0; i < BOARD_SIZE; i++) {
+        for(int j = 0; j < BOARD_SIZE; j++) {
+            printf("%d ", p_board->data[i][j].value);
         }
         printf("\n");
     }
