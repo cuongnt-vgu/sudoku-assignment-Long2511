@@ -1,76 +1,147 @@
 #include "hidden_singles.h"
+#include "sudoku.h"
+#include <stdlib.h>
 
-int find_hidden_single_values(Cell **p_cells, int *hidden_single_values) {
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        hidden_single_values[i] = 0;
-    }
+int hidden_singles(SudokuBoard *board)
+{
+    struct hidden_single_reserved *HEAD = NULL;
 
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        Cell *cell = p_cells[i];
-        if (cell->num_candidates > 1) {
-            for (int j = 0; j < cell->num_candidates; j++) {
-                if (cell->candidates[j] != 0) {
-                    hidden_single_values[cell->candidates[j] - 1]++;
-                }
-            }
-        }
-    }
-    int counter = 0;
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        if (hidden_single_values[i] == 1) {
-            hidden_single_values[counter++] = i + 1;
-        }
-    }
-
-    return counter;
-}
-
-void find_hidden_single(Cell **p_cells, HiddenSingle *p_hidden_singles, int *p_counter) {
-    int hidden_single_values[BOARD_SIZE];
-    int num_hidden_single_values = find_hidden_single_values(p_cells, hidden_single_values);
-
-    // Loop through the cells
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        Cell *cell = p_cells[i];
-        if (cell->num_candidates > 1) {
-            for (int j = 0; j < cell->num_candidates; j++) {
-                for (int k = 0; k < num_hidden_single_values; k++) {
-                    if (cell->candidates[j] == hidden_single_values[k]) {
-                        p_hidden_singles[*p_counter].p_cell = cell;
-                        p_hidden_singles[*p_counter].value = cell->candidates[j];
-                        (*p_counter)++;
+    int num_hidden_single = 0 ;
+    for (int row = 0; row<BOARD_SIZE; row++ ){
+        for (int col = 0; col < BOARD_SIZE; col++){
+            Cell *specificCell = &board->data[row][col];
+            if (specificCell-> num_candidates == 1) continue;
+            for (int i=0; i<BOARD_SIZE; i++){
+                if(specificCell->candidates[i] == 1){
+                    if (check_row(board,row,col,i)
+                        || check_col(board,row,col,i)
+                        || check_box(board,row,col,specificCell->box_index,i) ){
+                        num_hidden_single++;
+                        insert(&HEAD,row,col,i);
                     }
                 }
+
             }
+        }
+    }
+    transverseLinkedList(HEAD, board);
+    free_linked_list(HEAD);
+    return num_hidden_single;
+}
+bool check_row(SudokuBoard *board, int idRow, int idCol, int idCandidate){
+    bool unique = true;
+    for (int i = 0; i < BOARD_SIZE; i++){
+        if (i == idCol){
+            continue;
+        }
+        Cell *specificCell = &board->data[idRow][i];
+        if (specificCell->candidates[idCandidate] == 1){
+            unique = false;
+            break;
+        }
+    }
+    return unique;
+}
+
+bool check_col(SudokuBoard *board, int idRow, int idCol, int idCandidate){
+    bool unique = true;
+    for (int i = 0; i < BOARD_SIZE; i++){
+        if (i == idRow){
+            continue;
+        }
+        Cell *specificCell = &board->data[i][idCol];
+        if (specificCell->candidates[idCandidate] == 1){
+            unique = false;
+            break;
+        }
+    }
+    return unique;
+}
+bool check_box (SudokuBoard *board, int idRow, int idCol, int idBox, int idCandidate){
+    bool unique = true;
+    int currCol = (idBox %3) *3;
+    int currRow = (int)(idBox/3) *3;
+    for (int i = currRow; i< currRow + 3; i++){
+        for (int j =currCol; j<currCol + 3; j++){
+            if (i == idRow && j == idCol){
+                continue;
+            }
+            Cell *specificCell = &board->data[i][j];
+            if (specificCell->candidates[idCandidate] == 1){
+                unique = false;
+                goto end;
+            }
+        }
+    }
+    end:
+    return unique;
+}
+
+void self_remove_candidates(Cell *cell, int idCandidate){
+    for (int i = 0; i <BOARD_SIZE; i++){
+        if (i == idCandidate){
+            continue;
+        }
+        if(cell->candidates[i] == 1){
+            unset_candidate(cell, i+1);
         }
     }
 }
 
-int hidden_singles(SudokuBoard *p_board) {
-    HiddenSingle hidden_singles[BOARD_SIZE * BOARD_SIZE];
-    int counter = 0;
-
-    // Find hidden singles in rows
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        find_hidden_single(p_board->p_rows[i], hidden_singles, &counter);
+void remove_candidates(SudokuBoard *board, int idRow, int idCol, int idBox, int idCandidate){
+    for (int i =0; i <BOARD_SIZE; i++){
+        if (i == idRow) continue;
+        Cell *specificCell =&board->data[i][idCol];
+        if(specificCell->candidates[idCandidate] == 1){
+            unset_candidate(specificCell,idCandidate + 1);
+        }
+    }
+    for (int i =0; i <BOARD_SIZE; i++){
+        if (i == idCol) continue;
+        Cell *specificCell =&board->data[idRow][i];
+        if(specificCell->candidates[idCandidate] == 1){
+            unset_candidate(specificCell,idCandidate + 1);
+        }
+    }
+    int currCol = (idBox %3) *3;
+    int currRow = (int)(idBox/3) *3;
+    for (int i = currRow; i< currRow + 3; i++){
+        for (int j =currCol; j<currCol + 3; j++){
+            if (i == idRow && j == idCol){
+                continue;
+            }
+            Cell *specificCell = &board->data[i][j];
+            if (specificCell->candidates[idCandidate] == 1){
+                unset_candidate(specificCell,idCandidate +1);
+            }
+        }
     }
 
-    // Find hidden singles in columns
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        find_hidden_single(p_board->p_cols[i], hidden_singles, &counter);
-    }
+}
 
-    // Find hidden singles in boxes
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        find_hidden_single(p_board->p_boxes[i], hidden_singles, &counter);
-    }
+void insert(struct hidden_single_reserved **HEAD, int row, int col, int candidate){
+    struct hidden_single_reserved *newNode = malloc(sizeof(struct hidden_single_reserved));
+    newNode->col = col;
+    newNode->row = row;
+    newNode->candidate = candidate;
+    newNode->next = *HEAD;
+    *HEAD = newNode;
+}
 
-    // Apply the hidden singles to the board
-    for (int i = 0; i < counter; i++) {
-        Cell *cell = hidden_singles[i].p_cell;
-        cell->value = hidden_singles[i].value;
-        cell->num_candidates = 0;
+void transverseLinkedList (struct hidden_single_reserved *HEAD, SudokuBoard *board){
+    struct hidden_single_reserved *temp = HEAD;
+    while (temp != NULL){
+        Cell *cell = &board->data[temp->row][temp->col];
+        self_remove_candidates(cell,temp->candidate);
+        temp = temp->next;
     }
-
-    return counter;
+}
+void free_linked_list(struct hidden_single_reserved *HEAD){
+    struct hidden_single_reserved *current = HEAD;
+    struct hidden_single_reserved *next;
+    while (current != NULL){
+        next = current->next;
+        free (current);
+        current = next;
+    }
 }
